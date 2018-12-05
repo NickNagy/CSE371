@@ -14,7 +14,7 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	output AUD_DACDAT;
 	
 	// Local wires.
-	wire read_ready, write_ready, read, write, writeMem, readMem;
+	wire read_ready, write_ready, read, write, writeMem, readMem, speedUpRecording, slowDownRecording;
 	wire [23:0] readdata_left, readdata_right;
 	wire [23:0] writedata_left, writedata_right;
 	wire reset = ~KEY[0];
@@ -29,6 +29,9 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	assign read = read_ready;
 	assign write = write_ready;
 	
+	signalCutter key1cut (.in(~KEY[1]), .reset(SW[9]), .clk(CLOCK_50), .out(speedUpRecording));
+	signalCutter key2cut (.in(~KEY[2]), .reset(SW[9]), .clk(CLOCK_50), .out(slowDownRecording));
+	
 	//avgfilter avgL (.clk(CLOCK_50), .in(readdata_left), .read_ready(read_ready), .write_ready(write_ready), .out(writedata_left));
 	//avgfilter avgR (.clk(CLOCK_50), .in(readdata_right), .read_ready(read_ready), .write_ready(write_ready), .out(writedata_right));
 	
@@ -37,8 +40,8 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	
 	trackMemSignals tracker (.signalIn(~KEY[3]), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem));
 	
-	audioLooper loopLeft (.in(readdata_left), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .reverse(reverse), .out(writedata_left));
-	audioLooper loopRight (.in(readdata_right), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .reverse(reverse), .out(writedata_right));
+	audioLooper loopLeft (.in(readdata_left), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .speedUpRecording(speedUpRecording), .slowDownRecording(slowDownRecording), .reverse(reverse), .out(writedata_left));
+	audioLooper loopRight (.in(readdata_right), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .speedUpRecording(speedUpRecording), .slowDownRecording(slowDownRecording), .reverse(reverse), .out(writedata_right));
 	
 /////////////////////////////////////////////////////////////////////////////////
 // Audio CODEC interface. 
@@ -95,5 +98,7 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	);
 
 endmodule
+
+
 
 
