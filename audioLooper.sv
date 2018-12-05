@@ -6,7 +6,6 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 	
 	logic loopExists, rwClock;
 	logic [ADDR_WIDTH-1:0] loopAddr, nextLoopAddr, loopMax, nextLoopMax;
-	logic [23:0] memOut;
 	
 	logic rwSignal;
 	
@@ -24,6 +23,7 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 	
 	logic [23:0] loopMem [0:2**ADDR_WIDTH-1];
 	
+	// update max index of memory for loop
 	always_comb begin
 		if (reset)
 			nextLoopMax = 0;
@@ -58,14 +58,26 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 			nextLoopAddr = loopAddr;
 	end
 
+	// sometimes mem address is off immediately after switching to read
+	// gives delay before correct memory output
+	logic signalReady, signalReadyNext;
+	always_comb begin
+		if (reset | (write & signalReady))
+			signalReadyNext = 0;
+		else if (read & rwSignal)
+			signalReadyNext = 1;
+		else
+			signalReadyNext = signalReady;
+	end
+	
 	always_ff @(posedge clk) begin
+		signalReady <= signalReadyNext;
 		if (reset) begin
 			loopAddr <= 0;
 			loopMax <= 0;
 			loopExists <= 0;
 		end else begin
 			if (read & loopExists & rwSignal) begin
-				memOut <= loopMem[loopAddr];
 				loopAddr <= nextLoopAddr;
 			end else if (write) begin
 				loopExists <= 1;
@@ -81,13 +93,12 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 	always_comb begin
 		if (reset)
 			out = 23'b0;
-		else if (read & loopExists)
-			out = memOut[23:0];
+		else if (read & loopExists & signalReady)
+			out = loopMem[loopAddr];
 		else
 			out = in;
 	end
 	
-	//assign out = temp;
 endmodule
 
 module audioLooper_testbench();
