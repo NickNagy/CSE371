@@ -1,9 +1,10 @@
-module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK, 
+module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK, GPIO_0,
 		        AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK, AUD_ADCDAT, AUD_DACDAT);
 
 	input CLOCK_50, CLOCK2_50;
 	input [3:0] KEY;
 	input [9:0] SW;
+	output [35:0] GPIO_0;
 	// I2C Audio/Video config interface
 	output FPGA_I2C_SCLK;
 	inout FPGA_I2C_SDAT;
@@ -39,6 +40,9 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	//part3 p3R (.clk(CLOCK_50), .reset(reset), .in(readdata_right), .read_ready(read), .write_ready(write), .out(writedata_right));
 	
 	trackMemSignals tracker (.signalIn(~KEY[3]), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem));
+	
+	assign GPIO_0[0] = readMem;
+	assign GPIO_0[1] = writeMem;
 	
 	audioLooper loopLeft (.in(readdata_left), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .speedUpRecording(speedUpRecording), .slowDownRecording(slowDownRecording), .reverse(reverse), .out(writedata_left));
 	audioLooper loopRight (.in(readdata_right), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem), .speedUpRecording(speedUpRecording), .slowDownRecording(slowDownRecording), .reverse(reverse), .out(writedata_right));
@@ -98,7 +102,6 @@ module top (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD_XCK,
 	);
 
 endmodule
-
 
 
 
