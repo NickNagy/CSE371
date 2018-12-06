@@ -1,14 +1,14 @@
-module getNewClock (reset, frequency, CLOCK50, newClock);
-	input logic reset, CLOCK50;
-	input logic [23:0] frequency;
+module getNewClock (reset, period, CLOCK_50, newClock);
+	input logic reset, CLOCK_50;
+	input logic [23:0] period;
 	output logic newClock;
 	
 	logic [23:0] counter;
 	logic halfPeriod;
 	
-	assign halfPeriod = (counter == (frequency>>1));
-	
-	always_ff @(posedge CLOCK50) begin
+	assign halfPeriod = (counter == (period>>1));
+
+	always_ff @(posedge CLOCK_50) begin
 		if (reset) begin
 			counter <= 24'd0;
 			newClock <= 0;
@@ -24,25 +24,25 @@ module getNewClock (reset, frequency, CLOCK50, newClock);
 endmodule 
 
 module getNewClock_testbench();
-	logic reset, CLOCK50, newClock;
-	logic [23:0] frequency;
+	logic reset, CLOCK_50, newClock;
+	logic [23:0] period;
 	
-	assign frequency = 24'd382;
+	assign period = 24'd382;
 	
-	getNewClock dut (.reset, .frequency, .CLOCK50, .newClock);
+	getNewClock dut (.reset, .period, .CLOCK_50, .newClock);
 	
 	parameter CLOCK_PERIOD = 100;
 	
 	initial begin
-		CLOCK50 <= 0;
-		forever #(CLOCK_PERIOD/2) CLOCK50 <= ~CLOCK50;
+		CLOCK_50 <= 0;
+		forever #(CLOCK_PERIOD/2) CLOCK_50 <= ~CLOCK_50;
 	end
 	
 	initial begin
-		reset <= 1; @(posedge CLOCK50);
+		reset <= 1; @(posedge CLOCK_50);
 		reset <= 0;
 		for (int i = 0; i < 3*CLOCK_PERIOD; i++) begin
-			@(posedge CLOCK50);
+			@(posedge CLOCK_50);
 		end
 		$stop;
 	end
