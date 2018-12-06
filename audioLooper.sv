@@ -1,6 +1,6 @@
 `timescale 1ps/1ps
-module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecording, slowDownRecording, write, read, reverse, out);
-	input logic clk, reset, write, read, reverse, speedUpRecording, slowDownRecording;
+module audioLooper #(parameter ADDR_WIDTH = 4) (clk, rwClk, reset, in, write, read, reverse, out);
+	input logic clk, rwClk, reset, write, read, reverse;
 	input logic [23:0] in;
 	output logic [23:0] out;
 	
@@ -8,16 +8,6 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 	logic [ADDR_WIDTH-1:0] loopAddr, nextLoopAddr, loopMax, nextLoopMax;
 	
 	logic rwSignal;
-	
-	logic [23:0] initSamplePeriod, maxSamplePeriod, minSamplePeriod, samplePeriod;
-	assign initSamplePeriod = 24'd400;
-	assign maxSamplePeriod = initSamplePeriod << 4;
-	assign minSamplePeriod = initSamplePeriod >> 2;
-	
-	// speeding up the recording corresponds to decreasing the period of the sampling clock signal
-	modPeriod mp (.in(initSamplePeriod), .max(maxSamplePeriod), .min(minSamplePeriod), .increase(slowDownRecording), .decrease(speedUpRecording), .clk, .reset, .out(samplePeriod));
-	
-	getNewClock newClk (.CLOCK50(clk), .reset(reset | slowDownRecording | speedUpRecording), .period(samplePeriod), .newClock(rwClock));
 	
 	signalCutter cutter (.in(rwClock), .reset, .clk, .out(rwSignal));
 	
@@ -102,65 +92,65 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, reset, in, speedUpRecordin
 endmodule
 
 module audioLooper_testbench();
-	logic [23:0] in, out;
-	logic clk, reset, read, write, reverse, speedUpRecording, slowDownRecording;
-	
-	parameter CLOCK_PERIOD = 100;
-	parameter ADDR_WIDTH = 4;
-	
-	audioLooper #(ADDR_WIDTH) dut (.in, .clk, .reset, .read, .write, .speedUpRecording, .slowDownRecording, .reverse, .out);
-	
-	initial begin
-		clk <= 0;
-		forever #(CLOCK_PERIOD/2) clk <= ~clk;
-	end
-	
-	initial begin
-		in <= 23'd0;
-		forever #(CLOCK_PERIOD) in <= in + 1'b1;
-	end
-	
-	// shouldn't both be true
-	assert property (@(posedge clk) ~(read & write));
-	
-	// TESTING
-	// what happens if I try to read before I've written?
-	// what happens if I have read and write true at the same time?
-	// what happens if I write for more addresses than in memory?
-	initial begin
-		reset <= 1; speedUpRecording <= 0; slowDownRecording <= 0; read <= 0; write <= 0; reverse <= 0; @(posedge clk); @(posedge clk); @(posedge clk);
-		reset <= 0; read <= 1; @(posedge clk);
-		@(posedge clk);
-		reverse <= 1; @(posedge clk);
-		@(posedge clk);
-		read <= 0; write <= 1; @(posedge clk);
-		// what happens when looping goes for longer than memory depth?
-		for (int i = 0; i <= 50; i++) begin
-			@(posedge clk);
-		end
-		@(posedge clk);
-		@(posedge clk);
-		// test playback
-		write <= 0; read <= 1; reverse <= 0; @(posedge clk);
-		for (int j = 0; j < 2; j++) begin
-			for (int k = 0; k < 50; k++) begin
-				@(posedge clk);
-			end
-			reverse <= ~reverse;
-		end
-		// test speeding up and slowing down
-		for (int l = 0; l < 2; l++) begin
-			speedUpRecording <= 1; @(posedge clk);
-			for (int m = 0; m < 30; m++) begin
-				speedUpRecording <= 0; @(posedge clk);
-			end
-		end
-		for (int n = 0; n < 3; n++) begin
-			slowDownRecording <= 1; @(posedge clk);
-			for (int o = 0; o < 30; o++) begin
-				slowDownRecording <= 0; @(posedge clk);
-			end
-		end
-		$stop;
-	end
+//	logic [23:0] in, out;
+//	logic clk, reset, read, write, reverse, speedUpRecording, slowDownRecording;
+//	
+//	parameter CLOCK_PERIOD = 100;
+//	parameter ADDR_WIDTH = 4;
+//	
+//	audioLooper #(ADDR_WIDTH) dut (.in, .clk, .reset, .read, .write, .speedUpRecording, .slowDownRecording, .reverse, .out);
+//	
+//	initial begin
+//		clk <= 0;
+//		forever #(CLOCK_PERIOD/2) clk <= ~clk;
+//	end
+//	
+//	initial begin
+//		in <= 23'd0;
+//		forever #(CLOCK_PERIOD) in <= in + 1'b1;
+//	end
+//	
+//	// shouldn't both be true
+//	assert property (@(posedge clk) ~(read & write));
+//	
+//	// TESTING
+//	// what happens if I try to read before I've written?
+//	// what happens if I have read and write true at the same time?
+//	// what happens if I write for more addresses than in memory?
+//	initial begin
+//		reset <= 1; speedUpRecording <= 0; slowDownRecording <= 0; read <= 0; write <= 0; reverse <= 0; @(posedge clk); @(posedge clk); @(posedge clk);
+//		reset <= 0; read <= 1; @(posedge clk);
+//		@(posedge clk);
+//		reverse <= 1; @(posedge clk);
+//		@(posedge clk);
+//		read <= 0; write <= 1; @(posedge clk);
+//		// what happens when looping goes for longer than memory depth?
+//		for (int i = 0; i <= 50; i++) begin
+//			@(posedge clk);
+//		end
+//		@(posedge clk);
+//		@(posedge clk);
+//		// test playback
+//		write <= 0; read <= 1; reverse <= 0; @(posedge clk);
+//		for (int j = 0; j < 2; j++) begin
+//			for (int k = 0; k < 50; k++) begin
+//				@(posedge clk);
+//			end
+//			reverse <= ~reverse;
+//		end
+//		// test speeding up and slowing down
+//		for (int l = 0; l < 2; l++) begin
+//			speedUpRecording <= 1; @(posedge clk);
+//			for (int m = 0; m < 30; m++) begin
+//				speedUpRecording <= 0; @(posedge clk);
+//			end
+//		end
+//		for (int n = 0; n < 3; n++) begin
+//			slowDownRecording <= 1; @(posedge clk);
+//			for (int o = 0; o < 30; o++) begin
+//				slowDownRecording <= 0; @(posedge clk);
+//			end
+//		end
+//		$stop;
+//	end
 endmodule
