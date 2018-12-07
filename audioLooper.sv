@@ -1,5 +1,5 @@
 `timescale 1ps/1ps
-module audioLooper #(parameter ADDR_WIDTH = 16) (clk, rwClk, reset, in, write, read, reverse, out);
+module audioLooper #(parameter ADDR_WIDTH = 15) (clk, rwClk, reset, in, write, read, reverse, out);
 	input logic clk, rwClk, reset, write, read, reverse;
 	input logic [23:0] in;
 	output logic [23:0] out;
@@ -60,6 +60,7 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, rwClk, reset, in, write, r
 			signalReadyNext = signalReady;
 	end
 	
+	integer i;
 	always_ff @(posedge clk) begin
 		signalReady <= signalReadyNext;
 		if (reset) begin
@@ -72,7 +73,7 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, rwClk, reset, in, write, r
 			end else if (write) begin
 				loopExists <= 1;
 				if (rwSignal) begin
-					loopMem[loopAddr] <= in;
+					loopMem[loopAddr] <= in; // change if fails
 					loopMax <= nextLoopMax;
 					loopAddr <= nextLoopAddr;
 				end
@@ -84,7 +85,7 @@ module audioLooper #(parameter ADDR_WIDTH = 16) (clk, rwClk, reset, in, write, r
 		if (reset)
 			out = 23'b0;
 		else if (read & loopExists & signalReady)
-			out = loopMem[loopAddr];
+			out = loopMem[loopAddr]; // change if fails
 		else
 			out = in;
 	end
