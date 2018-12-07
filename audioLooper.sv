@@ -1,15 +1,15 @@
 `timescale 1ps/1ps
-module audioLooper #(parameter ADDR_WIDTH = 4) (clk, rwClk, reset, in, write, read, reverse, out);
+module audioLooper #(parameter ADDR_WIDTH = 16) (clk, rwClk, reset, in, write, read, reverse, out);
 	input logic clk, rwClk, reset, write, read, reverse;
 	input logic [23:0] in;
 	output logic [23:0] out;
 	
-	logic loopExists, rwClock;
+	logic loopExists;
 	logic [ADDR_WIDTH-1:0] loopAddr, nextLoopAddr, loopMax, nextLoopMax;
 	
 	logic rwSignal;
 	
-	signalCutter cutter (.in(rwClock), .reset, .clk, .out(rwSignal));
+	signalCutter cutter (.in(rwClk), .reset, .clk, .out(rwSignal));
 	
 	logic [23:0] loopMem [0:2**ADDR_WIDTH-1];
 	
