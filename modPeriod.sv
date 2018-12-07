@@ -12,8 +12,9 @@ module modPeriod(in, reset, clk, max, min, decrease, increase, out, LEDR);
 			temp = out << 1;
 			nextLEDR = LEDR << 1;
 		end else if (decrease & ((out >> 1) >= min)) begin
-			temp = out >> 1;
-			nextLEDR = LEDR >> 1;
+			temp = (out >> 1);
+			nextLEDR[8:0] = (LEDR >> 1);
+			nextLEDR[9] = 1;
 		end else begin
 			temp = out;
 			nextLEDR = LEDR;
