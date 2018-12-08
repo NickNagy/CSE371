@@ -1,10 +1,10 @@
 # Digital Design
 
+IMPORTANT NOTES: 
+
 DE1_SoC.sv and top.v modified from: https://class.ece.uw.edu/271/hauck2/de1/index.html
 
 Additional files from same directory (ie not included in this repository) are required for this project to compile.
-
-#NOTE: 
 
 top.sv is the top-level module for all files except for DE1_SoC.sv. It is for driving audio through the DE1 board, between mic in and line out. It instantiates audioLooper.sv, a module I designed for the purposes of sampling and looping audio for musical purposes.
 
