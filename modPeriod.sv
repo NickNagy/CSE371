@@ -1,3 +1,4 @@
+// note: this module is buggy :(
 module modPeriod(in, reset, clk, max, min, decrease, increase, out, LEDR);
 	input logic [23:0] in, max, min;
 	input logic clk, reset, decrease, increase;
