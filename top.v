@@ -24,24 +24,17 @@ module audioTop (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD
 	logic reverse;
 	assign reverse = SW[0];
 
-	/////////////////////////////////
-	// Your code goes here 
-	/////////////////////////////////
-	
-	//assign writedata_left = readdata_left;
-	//assign writedata_right = readdata_right;
 	assign read = read_ready;
 	assign write = write_ready;
 	
 	signalCutter key1cut (.in(~KEY[1]), .reset(SW[9]), .clk(CLOCK_50), .out(speedUpRecording));
 	signalCutter key2cut (.in(~KEY[2]), .reset(SW[9]), .clk(CLOCK_50), .out(slowDownRecording));
 	
+	// filtered data, noise reduction:
 	//avgfilter avgL (.clk(CLOCK_50), .in(readdata_left), .read_ready(read_ready), .write_ready(write_ready), .out(writedata_left));
 	//avgfilter avgR (.clk(CLOCK_50), .in(readdata_right), .read_ready(read_ready), .write_ready(write_ready), .out(writedata_right));
-	
-	//part3 p3L (.clk(CLOCK_50), .reset(reset), .in(readdata_left), .read_ready(read), .write_ready(write), .out(writedata_left));
-	//part3 p3R (.clk(CLOCK_50), .reset(reset), .in(readdata_right), .read_ready(read), .write_ready(write), .out(writedata_right));
 
+	// constraints for sample rates
 	logic [23:0] initSamplePeriod, maxSamplePeriod, minSamplePeriod, samplePeriod;
 	assign initSamplePeriod = 24'd400;
 	assign maxSamplePeriod = initSamplePeriod << 4;
@@ -50,14 +43,16 @@ module audioTop (CLOCK_50, CLOCK2_50, SW, KEY, FPGA_I2C_SCLK, FPGA_I2C_SDAT, AUD
 	// speeding up the recording corresponds to decreasing the period of the sampling clock signal
 	modPeriod mp (.in(initSamplePeriod), .max(maxSamplePeriod), .min(minSamplePeriod), .increase(slowDownRecording), .decrease(speedUpRecording), .clk(CLOCK_50), .reset(SW[9]), .out(samplePeriod), .LEDR(LEDR));
 	
+	// clock for read & write signals @ a slower frequency than CLOCK_50 --> so that we can sample audio over a longer stretch of time
 	logic rwClk;
 	getNewClock newClk (.CLOCK_50(CLOCK_50), .reset(SW[9] | slowDownRecording | speedUpRecording), .period(samplePeriod), .newClock(rwClk));
 
+	// write and read are same input source, keep track of which mode we are in
 	trackMemSignals tracker (.signalIn(~KEY[3]), .clk(CLOCK_50), .reset(SW[9]), .write(writeMem), .read(readMem));
 	
 	assign GPIO_0[0] = readMem;
 	assign GPIO_0[1] = writeMem;
-	
+
 	audioLooper loopLeft (.in(readdata_left), .clk(CLOCK_50), .reset(SW[9]), .rwClk(rwClk), .write(writeMem), .read(readMem), .reverse(reverse), .out(writedata_left));
 	audioLooper loopRight (.in(readdata_right), .clk(CLOCK_50), .reset(SW[9]), .rwClk(rwClk), .write(writeMem), .read(readMem), .reverse(reverse), .out(writedata_right));
 	
